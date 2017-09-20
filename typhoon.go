@@ -21,12 +21,13 @@ func New() *Typhoon {
 	}
 }
 
-func (tp *Typhoon)AddCommandRoute(path string, task core.Task) {
-	tp.router.AddCommandRoute(path, task)
+// pattern matches req.URL.Path
+func (tp *Typhoon)AddCommandRoute(pattern string, task core.Task) {
+	tp.router.AddCommandRoute(pattern, task)
 }
 
-func (tp *Typhoon)AddServiceRoute(path string, task core.Task) {
-	tp.router.AddServiceRoute(path, task)
+func (tp *Typhoon)AddServiceRoute(pattern string, task core.Task) {
+	tp.router.AddServiceRoute(pattern, task)
 }
 
 func (tp *Typhoon)Run(addr string) error {
