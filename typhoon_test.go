@@ -14,7 +14,7 @@ type ServiceTask struct {
 
 }
 
-func (st *ServiceTask)Do()(interface{}, error) {
+func (st *ServiceTask)Do()([]byte, error) {
 	fmt.Println("ServiceTask.Do()")
 	return nil, nil
 }
@@ -29,7 +29,7 @@ type UserCommandTask struct {
 	Age int 	`json:"age"`
 }
 
-func (ct *UserCommandTask)Do()(interface{}, error) {
+func (ct *UserCommandTask)Do()([]byte, error) {
 	resp, _ := json.Marshal(ct)
 	return resp, nil
 }
@@ -38,7 +38,7 @@ func (ct *UserCommandTask)Clone() core.Task {
 	return nil
 }
 
-func (ct *UserCommandTask)Prepare(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func (ct *UserCommandTask)Prepare(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	if r.Method != "POST" {
 		w.WriteHeader(400)
 		fmt.Println("Prepare err.")
@@ -56,10 +56,10 @@ func (ct *UserCommandTask)Prepare(w http.ResponseWriter, r *http.Request) (inter
 	return nil, nil
 }
 
-func (ct *UserCommandTask)Response(w http.ResponseWriter, data interface{}) error {
-	fmt.Println("Response data:", string(data.([]byte)))
+func (ct *UserCommandTask)Response(w http.ResponseWriter, data []byte) error {
+	fmt.Println("Response data:", string(data))
 	if data != nil {
-		w.Write(data.([]byte))
+		w.Write(data)
 	}
 
 	return nil

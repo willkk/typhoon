@@ -15,7 +15,7 @@ const (
 // Task is the interface that every "task" should implement.
 type Task interface {
 	// Do executes task.
-	Do()(interface{}, error)
+	Do()([]byte, error)
 	// Clone clones a copy of self
 	Clone() Task
 }
@@ -25,9 +25,9 @@ type commandTask interface {
 	Task
 
 	// Prepare does the preparation before calling Do.
-	Prepare(w http.ResponseWriter, r *http.Request) (interface{}, error)
+	Prepare(w http.ResponseWriter, r *http.Request) ([]byte, error)
 	// Response replies result to client.
-	Response(w http.ResponseWriter, resp interface{}) error
+	Response(w http.ResponseWriter, resp []byte) error
 }
 
 func NewHandler(task Task, tasktype taskType) http.Handler {
