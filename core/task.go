@@ -1,6 +1,9 @@
 package core
 
-import "net/http"
+import (
+	"net/http"
+	"fmt"
+)
 
 type taskType int
 
@@ -24,7 +27,7 @@ type commandTask interface {
 	// Prepare does the preparation before calling Do.
 	Prepare(w http.ResponseWriter, r *http.Request) (interface{}, error)
 	// Response replies result to client.
-	Response(interface{}) error
+	Response(w http.ResponseWriter, resp interface{}) error
 }
 
 func NewHandler(task Task, tasktype taskType) http.Handler {
@@ -38,14 +41,15 @@ type taskHandler struct {
 
 func (th *taskHandler)ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	task := th.task.(commandTask)
-	var resp interface{}
-	var err error
-	defer task.Response(resp)
 
-	resp, err = task.Prepare(w, r)
+	resp, err := task.Prepare(w, r)
 	if err != nil {
+		resp = []byte(err.Error())
+		task.Response(w, resp)
+		fmt.Printf("Prepare err:%s", err)
 		return
 	}
 
 	resp, err = task.Do()
+	task.Response(w, resp)
 }

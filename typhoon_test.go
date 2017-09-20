@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"io/ioutil"
-	"time"
+	"errors"
+	"encoding/json"
 )
 
 type ServiceTask struct {
@@ -22,45 +23,52 @@ func (st *ServiceTask)Clone() core.Task {
 	return nil
 }
 
-type CommandTask struct {
-	w http.ResponseWriter
-	r *http.Request
+type UserCommandTask struct {
+	Name string `json:"name"`
+	Tel string 	`json:"tel"`
+	Age int 	`json:"age"`
 }
 
-func (ct *CommandTask)Do()(interface{}, error) {
-	fmt.Println("ServiceTask.Do()")
-	time.Sleep(time.Second*3)
-	return nil, nil
+func (ct *UserCommandTask)Do()(interface{}, error) {
+	resp, _ := json.Marshal(ct)
+	return resp, nil
 }
 
-func (ct *CommandTask)Clone() core.Task {
+func (ct *UserCommandTask)Clone() core.Task {
 	return nil
 }
 
-func (ct *CommandTask)Prepare(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func (ct *UserCommandTask)Prepare(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	if r.Method != "POST" {
 		w.WriteHeader(400)
-		return nil, nil
+		fmt.Println("Prepare err.")
+		return nil, errors.New("Invalid Method")
 	}
 	data, _ := ioutil.ReadAll(r.Body)
-	fmt.Println("get req:%s", string(data))
-	fmt.Println("Prepare")
-	ct.w = w
-	ct.r = r
+	fmt.Println("get req:", string(data))
+	err := json.Unmarshal(data, ct)
+	if err != nil {
+		fmt.Println("Unmarshal failed. err=", err)
+		return nil, err
+	}
+	fmt.Println("get object:", ct)
 
 	return nil, nil
 }
 
-func (ct *CommandTask)Response(data interface{}) error {
-	ct.w.Write([]byte("123456"))
+func (ct *UserCommandTask)Response(w http.ResponseWriter, data interface{}) error {
+	fmt.Println("Response data:", string(data.([]byte)))
+	if data != nil {
+		w.Write(data.([]byte))
+	}
+
 	return nil
 }
-
 
 func TestTyphoon_Run(t *testing.T) {
 	tp := New()
 	tp.AddServiceRoute("timer/print", &ServiceTask{})
-	tp.AddCommandRoute("/test", &CommandTask{})
+	tp.AddCommandRoute("/test", &UserCommandTask{})
 
 	tp.Run(":8086")
 }
