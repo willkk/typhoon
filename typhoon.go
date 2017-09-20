@@ -2,7 +2,7 @@ package typhoon
 
 import (
 	"net/http"
-	"core"
+	"typhoon/core"
 )
 
 type Typhoon struct {
@@ -14,15 +14,19 @@ type Typhoon struct {
 // Build new Typhoon instance
 func New() *Typhoon {
 	return &Typhoon{
-		router: core.Router(),
+		router: core.MainRouter(),
 		server: http.Server{
-			Handler: core.Router(),
+			Handler: core.MainRouter(),
 		},
 	}
 }
 
-func (tp *Typhoon)AddRoute(path string, task core.Task) {
-	tp.router.AddRoute(path, task)
+func (tp *Typhoon)AddCommandRoute(path string, task core.Task) {
+	tp.router.AddCommandRoute(path, task)
+}
+
+func (tp *Typhoon)AddServiceRoute(path string, task core.Task) {
+	tp.router.AddServiceRoute(path, task)
 }
 
 func (tp *Typhoon)Run(addr string) error {
