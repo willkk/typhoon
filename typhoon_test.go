@@ -14,9 +14,8 @@ type ServiceTask struct {
 
 }
 
-func (st *ServiceTask)Do()([]byte, error) {
-	fmt.Println("ServiceTask.Do()")
-	return nil, nil
+func (st *ServiceTask)Do()(interface{}) {
+	return nil
 }
 
 func (st *ServiceTask)Clone() core.Task {
@@ -29,35 +28,32 @@ type UserCommandTask struct {
 	Age int 	`json:"age"`
 }
 
-func (ct *UserCommandTask)Do()([]byte, error) {
+func (ct *UserCommandTask)Do()(interface{}) {
 	resp, _ := json.Marshal(ct)
-	return resp, nil
+	return resp
 }
 
 func (ct *UserCommandTask)Clone() core.Task {
+	task := new(UserCommandTask)
+	*task = *ct
+	return task
+}
+
+func (ct *UserCommandTask)Prepare(w http.ResponseWriter, r *http.Request) error {
+	if r.Method != "POST" {
+		w.WriteHeader(400)
+		return errors.New("Invalid Method")
+	}
+	data, _ := ioutil.ReadAll(r.Body)
+	err := json.Unmarshal(data, ct)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (ct *UserCommandTask)Prepare(w http.ResponseWriter, r *http.Request) ([]byte, error) {
-	if r.Method != "POST" {
-		w.WriteHeader(400)
-		fmt.Println("Prepare err.")
-		return nil, errors.New("Invalid Method")
-	}
-	data, _ := ioutil.ReadAll(r.Body)
-	fmt.Println("get req:", string(data))
-	err := json.Unmarshal(data, ct)
-	if err != nil {
-		fmt.Println("Unmarshal failed. err=", err)
-		return nil, err
-	}
-	fmt.Println("get object:", ct)
-
-	return nil, nil
-}
-
 func (ct *UserCommandTask)Response(w http.ResponseWriter, data []byte) error {
-	fmt.Println("Response data:", string(data))
 	if data != nil {
 		w.Write(data)
 	}
