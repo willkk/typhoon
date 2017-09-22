@@ -82,7 +82,7 @@ func (ct *UserCommandTask)Response(ctx *task.TaskContext, data []byte) {
 
 	uctx := ctx.UserContext.Value("user_ctx").(*userContext)
 	now_us := now.Second()*1000000 + now.Nanosecond()/1000
-	fmt.Printf("[%d] done, consuming %d us\n", ctx.Id, now_us - uctx.start)
+	fmt.Printf("[%d] done, consume %d us\n", ctx.Id, now_us - uctx.start)
 }
 
 func TestTyphoon_Run(t *testing.T) {
