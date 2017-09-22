@@ -8,28 +8,30 @@ import (
 	"encoding/json"
 	"time"
 	"fmt"
+	"context"
 )
 
+//--------------------------------service task----------------------------------
+// Implement Task interface
 type ServiceTask struct {
-
 }
 
-func (st *ServiceTask)Do(ctx *task.TaskContext)([]byte, error) {
+func (st *ServiceTask)Do(ctx *task.TaskContext) {
 	var count int
 	for {
 		select {
-		case <- time.After(time.Second*30):
-			fmt.Printf("[%d]ServiceTask Do.\n", ctx.Id)
+		case <- time.After(time.Second*10):
+			fmt.Printf("[%d] service task count %d.\n", ctx.Id, count)
 			count++
 		}
-		if count == 10 {
+		if count == 100 {
 			break
 		}
 	}
-
-	return nil, nil
 }
 
+//--------------------------------command task----------------------------------
+// Implement CommandTask interface
 type UserCommandTask struct {
 	Name string `json:"name"`
 	Tel string 	`json:"tel"`
@@ -42,16 +44,21 @@ func (ct *UserCommandTask)Do(ctx *task.TaskContext)([]byte, error) {
 	return resp, err
 }
 
-func (ct *UserCommandTask)Clone() task.Task {
+func (ct *UserCommandTask)Clone() task.CommandTask {
 	task := new(UserCommandTask)
 	return task
 }
 
+type userContext struct {
+	start int // us
+}
 func (ct *UserCommandTask)Prepare(ctx *task.TaskContext) ([]byte, error) {
 	if ctx.R.Method != "POST" {
 		ctx.W.WriteHeader(400)
 		return []byte("Invalid Method"), errors.New("Invalid Method")
 	}
+
+	now := time.Now()
 
 	data, _ := ioutil.ReadAll(ctx.R.Body)
 	fmt.Printf("[%d] get req:%v\n", ctx.Id, string(data))
@@ -60,22 +67,36 @@ func (ct *UserCommandTask)Prepare(ctx *task.TaskContext) ([]byte, error) {
 		return []byte(err.Error()), err
 	}
 
+	uctx := &userContext{now.Second()*1000000 + now.Nanosecond()/1000}
+	ctx.UserContext = context.WithValue(nil, "user_ctx", uctx)
+
 	return nil, nil
 }
 
 func (ct *UserCommandTask)Response(ctx *task.TaskContext, data []byte) {
+	now := time.Now()
 	if data != nil {
 		ctx.W.Write(data)
+		fmt.Printf("[%d] write resp :%s.\n", ctx.Id, string(data))
 	}
-	fmt.Printf("[%d] write resp :%s\n", ctx.Id, string(data))
+
+	uctx := ctx.UserContext.Value("user_ctx").(*userContext)
+	now_us := now.Second()*1000000 + now.Nanosecond()/1000
+	fmt.Printf("[%d] done, consuming %d us\n", ctx.Id, now_us - uctx.start)
 }
 
 func TestTyphoon_Run(t *testing.T) {
 	tp := New()
 
-	tp.AddServiceRoute(&ServiceTask{})
-	tp.AddCommandRoute("/test", &UserCommandTask{})
+	// Add normal service task
+	tp.AddTask(&ServiceTask{})
+	tp.AddTask(&ServiceTask{})
+	// Add web command task
+	tp.AddRoute("/test", &UserCommandTask{})
 
+	// start service tasks
+	tp.StartTasks()
+	// wait for web requests
 	tp.Run(":8086")
 }
 

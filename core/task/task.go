@@ -6,23 +6,38 @@ import (
 
 type taskType int
 
-// Task is the interface that every "task" should implement.
+// Task is the basic service interface that every "task" should implement.
+// We define two kinds of Tasks, that is Task and CommandTask. Task represents the
+// normal tasks like one-time or cyclic execution go-routines, and CommandTask represents
+// web rpc calling tasks.
 type Task interface {
 	// Do executes task. err is used for ServiceTask and resp is used for CommandTask.
-	Do(ctx *TaskContext)(resp []byte, err error)
+	Do(ctx *TaskContext)
 }
 
+// commandTask does "Prepare"/"Response" before/after Do function.
+// Clone method returns a new copy of commandTask.
+type CommandTask interface {
+	Do(ctx *TaskContext)(resp []byte, err error)
 
-func NewHandler(task Task) http.Handler {
+	// Clone clones a copy of self
+	Clone() CommandTask
+	// Prepare does the preparation before calling Do.
+	Prepare(ctx *TaskContext) ([]byte, error)
+	// Response replies result to client.
+	Response(ctx *TaskContext, resp []byte)
+}
+
+func NewHandler(task CommandTask) http.Handler {
 	return &taskHandler{task}
 }
 
 type taskHandler struct {
-	task Task
+	task CommandTask
 }
 
 func (th *taskHandler)ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	cmdtask, ok := th.task.(commandTask)
+	cmdtask, ok := th.task.(CommandTask)
 	if !ok {
 		panic("type assertion failed.")
 	}

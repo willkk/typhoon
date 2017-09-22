@@ -3,6 +3,7 @@ package task
 import (
 	"sync/atomic"
 	"net/http"
+	"context"
 )
 
 var taskId uint64 = 0
@@ -14,6 +15,9 @@ type TaskContext struct {
 
 	// TaskId is used in both of serviceTask and commandTask.
 	Id uint64
+
+	// user context data
+	UserContext context.Context
 }
 
 // NewContext returns a new Context that will be used throughout processing-cycle.

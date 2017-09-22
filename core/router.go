@@ -5,6 +5,7 @@ import (
 	. "typhoon/core/task"
 )
 
+// router is used globally in this framework.
 var router *Router = &Router{ routes:make(map[string]http.Handler)}
 
 // Router acts the same way as the http.ServerMux
@@ -12,13 +13,9 @@ type Router struct {
 	routes map[string]http.Handler
 }
 
-func (r *Router)AddCommandRoute(path string, task Task) {
+func (r *Router)AddRoute(path string, task CommandTask) {
 	handler := NewHandler(task)
 	r.routes[path] = handler
-}
-
-func (r *Router)AddServiceRoute(task Task) {
-	AddServiceTask(task)
 }
 
 func (r *Router)route(path string) http.Handler {
