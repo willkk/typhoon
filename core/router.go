@@ -1,6 +1,9 @@
 package core
 
-import "net/http"
+import (
+	"net/http"
+	. "typhoon/core/task"
+)
 
 var router *Router = &Router{ routes:make(map[string]http.Handler)}
 
@@ -10,13 +13,12 @@ type Router struct {
 }
 
 func (r *Router)AddCommandRoute(path string, task Task) {
-	handler := NewHandler(task, taskTypeCommand)
+	handler := NewHandler(task)
 	r.routes[path] = handler
 }
 
-func (r *Router)AddServiceRoute(path string, task Task) {
-	handler := NewHandler(task, taskTypeService)
-	r.routes[path] = handler
+func (r *Router)AddServiceRoute(task Task) {
+	AddServiceTask(task)
 }
 
 func (r *Router)route(path string) http.Handler {

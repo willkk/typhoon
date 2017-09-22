@@ -2,6 +2,7 @@ package typhoon
 
 import (
 	"net/http"
+	"typhoon/core/task"
 	"typhoon/core"
 )
 
@@ -22,17 +23,20 @@ func New() *Typhoon {
 }
 
 // pattern matches req.URL.Path
-func (tp *Typhoon)AddCommandRoute(pattern string, task core.Task) {
+func (tp *Typhoon)AddCommandRoute(pattern string, task task.Task) {
 	tp.router.AddCommandRoute(pattern, task)
 }
 
-func (tp *Typhoon)AddServiceRoute(pattern string, task core.Task) {
-	tp.router.AddServiceRoute(pattern, task)
+func (tp *Typhoon)AddServiceRoute(task task.Task) {
+	tp.router.AddServiceRoute(task)
 }
 
 func (tp *Typhoon)Run(addr string) error {
 	tp.server.Addr = addr
 
+	task.StartAllServices()
 	return tp.server.ListenAndServe()
 }
+
+
 
