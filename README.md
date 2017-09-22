@@ -98,7 +98,7 @@ func (ct *UserCommandTask)Response(ctx *task.TaskContext, data []byte) {
 
 	uctx := ctx.UserContext.Value("user_ctx").(*userContext)
 	now_us := now.Second()*1000000 + now.Nanosecond()/1000
-	fmt.Printf("[%d] done, consuming %d us\n", ctx.Id, now_us - uctx.start)
+	fmt.Printf("[%d] done, consume %d us\n", ctx.Id, now_us - uctx.start)
 }
 
 func TestTyphoon_Run(t *testing.T) {
@@ -124,11 +124,11 @@ You can send requests using command: **curl -d '{"name":"will","age":23, "tel":"
 [3] get req:{"name":"will","age":23, "tel":"112"}
 [3] handling.
 [3] write resp :{"name":"","tel":"","age":0}.
-[3] done, consuming 1683 us
+[3] done, consume 1683 us
 [4] get req:{"name":"will","age":23, "tel":"112"}
 [4] handling.
 [4] write resp :{"name":"","tel":"","age":0}.
-[4] done, consuming 69 us
+[4] done, consume 69 us
 [1] service task count 0.
 [2] service task count 0.
 [2] service task count 1.
@@ -141,8 +141,9 @@ You can send requests using command: **curl -d '{"name":"will","age":23, "tel":"
 [5] get req:{"name":"will","age":23, "tel":"112"}
 [5] handling.
 [5] write resp :{"name":"","tel":"","age":0}.
-[5] done, consuming 380 us
+[5] done, consume 380 us
 [6] get req:{"name":"will","age":23, "tel":"112"}
 [6] handling.
 [6] write resp :{"name":"","tel":"","age":0}.
+[6] done, consume 440 us
 ```
