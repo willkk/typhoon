@@ -3,7 +3,6 @@ package typhoon
 import (
 	"testing"
 	"typhoon/core"
-	"fmt"
 	"net/http"
 	"io/ioutil"
 	"errors"
@@ -14,12 +13,8 @@ type ServiceTask struct {
 
 }
 
-func (st *ServiceTask)Do()(interface{}) {
-	return nil
-}
-
-func (st *ServiceTask)Clone() core.Task {
-	return nil
+func (st *ServiceTask)Do()([]byte, error) {
+	return nil, nil
 }
 
 type UserCommandTask struct {
@@ -28,37 +23,34 @@ type UserCommandTask struct {
 	Age int 	`json:"age"`
 }
 
-func (ct *UserCommandTask)Do()(interface{}) {
-	resp, _ := json.Marshal(ct)
-	return resp
+func (ct *UserCommandTask)Do()([]byte, error) {
+	resp, err := json.Marshal(ct)
+	return resp, err
 }
 
 func (ct *UserCommandTask)Clone() core.Task {
 	task := new(UserCommandTask)
-	*task = *ct
 	return task
 }
 
-func (ct *UserCommandTask)Prepare(w http.ResponseWriter, r *http.Request) error {
+func (ct *UserCommandTask)Prepare(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	if r.Method != "POST" {
 		w.WriteHeader(400)
-		return errors.New("Invalid Method")
+		return []byte("Invalid Method"), errors.New("Invalid Method")
 	}
 	data, _ := ioutil.ReadAll(r.Body)
 	err := json.Unmarshal(data, ct)
 	if err != nil {
-		return err
+		return []byte(err.Error()), err
 	}
 
-	return nil
+	return nil, nil
 }
 
-func (ct *UserCommandTask)Response(w http.ResponseWriter, data []byte) error {
+func (ct *UserCommandTask)Response(w http.ResponseWriter, data []byte) {
 	if data != nil {
 		w.Write(data)
 	}
-
-	return nil
 }
 
 func TestTyphoon_Run(t *testing.T) {

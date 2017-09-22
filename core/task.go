@@ -2,8 +2,6 @@ package core
 
 import (
 	"net/http"
-	"fmt"
-	"reflect"
 )
 
 type taskType int
@@ -15,20 +13,20 @@ const (
 
 // Task is the interface that every "task" should implement.
 type Task interface {
-	// Do executes task.
-	Do()(resp interface{})
-	// Clone clones a copy of self
-	Clone() Task
+	// Do executes task. err is used for ServiceTask and resp is used for CommandTask.
+	Do()(resp []byte, err error)
 }
 
 // commandTask additionally does "Prepare"/"Response" before/after Do function.
 type commandTask interface {
 	Task
 
+	// Clone clones a copy of self
+	Clone() Task
 	// Prepare does the preparation before calling Do.
-	Prepare(w http.ResponseWriter, r *http.Request) error
+	Prepare(w http.ResponseWriter, r *http.Request) ([]byte, error)
 	// Response replies result to client.
-	Response(w http.ResponseWriter, resp []byte) error
+	Response(w http.ResponseWriter, resp []byte)
 }
 
 func NewHandler(task Task, tasktype taskType) http.Handler {
@@ -41,25 +39,23 @@ type taskHandler struct {
 }
 
 func (th *taskHandler)ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	task := th.task.Clone()
-	if task == nil {
-		panic(fmt.Sprintf("(%v).Clone failed.", reflect.TypeOf(task)))
-	}
-
-	cmdtask, ok := task.(commandTask)
+	cmdtask, ok := th.task.(commandTask)
 	if !ok {
-		panic(fmt.Sprintf("(%v) type assertion failed.", reflect.TypeOf(task)))
+		panic("type assertion failed.")
 	}
 
-	err := cmdtask.Prepare(w, r)
+	task := cmdtask.Clone()
+	if task == nil {
+		panic("Clone return nil.")
+	}
+
+	resp_err, err := cmdtask.Prepare(w, r)
 	if err != nil {
-		cmdtask.Response(w, []byte(err.Error()))
+		cmdtask.Response(w, resp_err)
 		return
 	}
 
-	resp := task.Do()
-	if resp != nil {
-		cmdtask.Response(w, resp.([]byte))
-	}
-
+	// err is ignored if task is typeof CommandTask
+	resp, _ := task.Do()
+	cmdtask.Response(w, resp)
 }
