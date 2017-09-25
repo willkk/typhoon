@@ -23,10 +23,7 @@ func (r *Router)route(req *http.Request) http.Handler {
 }
 
 func (r *Router)ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	handler := r.route(req)
-	if handler != nil {
-		handler.ServeHTTP(w, req)
-	}
+	r.mux.ServeHTTP(w, req)
 }
 
 func MainRouter()*Router {
