@@ -6,25 +6,24 @@ import (
 )
 
 // router is used globally in this framework.
-var router *Router = &Router{ routes:make(map[string]http.Handler)}
+var router *Router = &Router{mux: http.NewServeMux()}
 
 // Router acts the same way as the http.ServerMux
 type Router struct {
-	routes map[string]http.Handler
+	mux *http.ServeMux
 }
 
 func (r *Router)AddRoute(path string, task CommandTask) {
-	handler := NewHandler(task)
-	r.routes[path] = handler
+	r.mux.Handle(path, NewHandler(task))
 }
 
-func (r *Router)route(path string) http.Handler {
-	return r.routes[path]
+func (r *Router)route(req *http.Request) http.Handler {
+	handler, _ := r.mux.Handler(req)
+	return handler
 }
 
 func (r *Router)ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	path := req.URL.Path
-	handler := r.route(path)
+	handler := r.route(req)
 	if handler != nil {
 		handler.ServeHTTP(w, req)
 	}
