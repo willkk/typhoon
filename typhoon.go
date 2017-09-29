@@ -8,7 +8,6 @@ import (
 
 type Typhoon struct {
 	router *core.Router
-
 	Server http.Server
 
 	// services. Every Typhoon instance has its own services.
@@ -37,8 +36,7 @@ func (tp *Typhoon)AddTask(handler func(ctx *task.Context)) {
 
 func (tp *Typhoon)StartTasks() {
 	for _, st := range tp.services {
-		ctx := task.NewContext(nil, nil)
-		go st.Do(ctx)
+		go st.Do(task.NewContext())
 	}
 }
 
@@ -48,5 +46,8 @@ func (tp *Typhoon)Run(addr string) error {
 	return tp.Server.ListenAndServe()
 }
 
-
+// manually start a task
+func StartTask(taskfunc func(ctx *task.Context)) {
+	go task.TaskFunc(taskfunc).Do(task.NewContext())
+}
 

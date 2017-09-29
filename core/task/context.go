@@ -9,10 +9,6 @@ import (
 var taskId uint64 = 0
 
 type Context struct {
-	// W&R is only used in commandTask
-	W http.ResponseWriter
-	R *http.Request
-
 	// TaskId is used in both of serviceTask and commandTask.
 	Id uint64
 
@@ -20,11 +16,20 @@ type Context struct {
 	UserContext context.Context
 }
 
+type WebContext struct {
+	Context
+
+	// W&R is only used in commandTask
+	W http.ResponseWriter
+	R *http.Request
+}
+
 // NewContext returns a new Context that will be used throughout processing-cycle.
-func NewContext(w http.ResponseWriter, r *http.Request)*Context {
-	return &Context{
-		W: w,
-		R: r,
-		Id: atomic.AddUint64(&taskId, 1),
-	}
+func NewContext() *Context {
+	return &Context{ Id: atomic.AddUint64(&taskId, 1)}
+}
+
+// NewContext returns a new Context that will be used throughout processing-cycle.
+func NewWebContext(w http.ResponseWriter, r *http.Request) *WebContext {
+	return &WebContext{ Context{Id: atomic.AddUint64(&taskId, 1)}, w, r}
 }

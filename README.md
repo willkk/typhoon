@@ -11,7 +11,7 @@ Typhoon是一个通用目的的Web API应用框架。实际项目中，发现大
 2. 解决项目间重复编码的问题，提高代码复用性。
 3. 为go routine标记id，方便log跟踪单个请求。
 
-# Example
+# Example(typhoon_test.go)
 
 ```go
 package typhoon
@@ -51,7 +51,7 @@ type UserCommandTask struct {
 	Age int 	`json:"age"`
 }
 
-func (ct *UserCommandTask)Do(ctx *task.Context)([]byte, error) {
+func (ct *UserCommandTask)Do(ctx *task.WebContext)([]byte, error) {
 	resp, err := json.Marshal(ct)
 	fmt.Printf("[%d] handling.\n", ctx.Id)
 	return resp, err
@@ -65,7 +65,7 @@ func (ct *UserCommandTask)Clone() task.CommandTask {
 type userContext struct {
 	start int // us
 }
-func (ct *UserCommandTask)Prepare(ctx *task.Context) ([]byte, error) {
+func (ct *UserCommandTask)Prepare(ctx *task.WebContext) ([]byte, error) {
 	if ctx.R.Method != "POST" {
 		ctx.W.WriteHeader(400)
 		return []byte("Invalid Method"), errors.New("Invalid Method")
@@ -86,7 +86,7 @@ func (ct *UserCommandTask)Prepare(ctx *task.Context) ([]byte, error) {
 	return nil, nil
 }
 
-func (ct *UserCommandTask)Response(ctx *task.Context, data []byte) {
+func (ct *UserCommandTask)Response(ctx *task.WebContext, data []byte) {
 	now := time.Now()
 	if data != nil {
 		ctx.W.Write(data)
@@ -103,12 +103,13 @@ func TestTyphoon_Run(t *testing.T) {
 
 	// Add normal service task
 	tp.AddTask(TrivialTask)
-	tp.AddTask(TrivialTask)
 	// Add web command task
 	tp.AddRoute("/test", &UserCommandTask{})
 
 	// start service tasks
 	tp.StartTasks()
+	// start a task immediately
+	StartTask(TrivialTask)
 	// wait for web requests
 	tp.Run(":8086")
 }

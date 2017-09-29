@@ -22,14 +22,14 @@ func (tf TaskFunc)Do(ctx *Context) {
 // commandTask does "Prepare"/"Response" before/after Do function.
 // Clone method returns a new copy of commandTask.
 type CommandTask interface {
-	Do(ctx *Context)(resp []byte, err error)
+	Do(ctx *WebContext)(resp []byte, err error)
 
 	// Clone clones a copy of self
 	Clone() CommandTask
 	// Prepare does the preparation before calling Do.
-	Prepare(ctx *Context) ([]byte, error)
+	Prepare(ctx *WebContext) ([]byte, error)
 	// Response replies result to client.
-	Response(ctx *Context, resp []byte)
+	Response(ctx *WebContext, resp []byte)
 }
 
 func NewHandler(task CommandTask) http.Handler {
@@ -51,7 +51,7 @@ func (th *taskHandler)ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		panic("Clone returns nil.")
 	}
 
-	ctx := NewContext(w, r)
+	ctx := NewWebContext(w, r)
 
 	resp_err, err := cmdtask.Prepare(ctx)
 	if err != nil {
