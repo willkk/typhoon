@@ -16,7 +16,7 @@ import (
 type ServiceTask struct {
 }
 
-func (st *ServiceTask)Do(ctx *task.TaskContext) {
+func (st *ServiceTask)Do(ctx *task.Context) {
 	var count int
 	for {
 		select {
@@ -38,7 +38,7 @@ type UserCommandTask struct {
 	Age int 	`json:"age"`
 }
 
-func (ct *UserCommandTask)Do(ctx *task.TaskContext)([]byte, error) {
+func (ct *UserCommandTask)Do(ctx *task.Context)([]byte, error) {
 	resp, err := json.Marshal(ct)
 	fmt.Printf("[%d] handling.\n", ctx.Id)
 	return resp, err
@@ -52,7 +52,7 @@ func (ct *UserCommandTask)Clone() task.CommandTask {
 type userContext struct {
 	start int // us
 }
-func (ct *UserCommandTask)Prepare(ctx *task.TaskContext) ([]byte, error) {
+func (ct *UserCommandTask)Prepare(ctx *task.Context) ([]byte, error) {
 	if ctx.R.Method != "POST" {
 		ctx.W.WriteHeader(400)
 		return []byte("Invalid Method"), errors.New("Invalid Method")
@@ -73,7 +73,7 @@ func (ct *UserCommandTask)Prepare(ctx *task.TaskContext) ([]byte, error) {
 	return nil, nil
 }
 
-func (ct *UserCommandTask)Response(ctx *task.TaskContext, data []byte) {
+func (ct *UserCommandTask)Response(ctx *task.Context, data []byte) {
 	now := time.Now()
 	if data != nil {
 		ctx.W.Write(data)

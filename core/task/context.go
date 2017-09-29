@@ -8,7 +8,7 @@ import (
 
 var taskId uint64 = 0
 
-type TaskContext struct {
+type Context struct {
 	// W&R is only used in commandTask
 	W http.ResponseWriter
 	R *http.Request
@@ -21,8 +21,8 @@ type TaskContext struct {
 }
 
 // NewContext returns a new Context that will be used throughout processing-cycle.
-func NewContext(w http.ResponseWriter, r *http.Request)*TaskContext {
-	return &TaskContext{
+func NewContext(w http.ResponseWriter, r *http.Request)*Context {
+	return &Context{
 		W: w,
 		R: r,
 		Id: atomic.AddUint64(&taskId, 1),

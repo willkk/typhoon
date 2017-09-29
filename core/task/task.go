@@ -4,28 +4,26 @@ import (
 	"net/http"
 )
 
-type taskType int
-
 // Task is the basic service interface that every "task" should implement.
 // We define two kinds of Tasks, that is Task and CommandTask. Task represents the
 // normal tasks like one-time or cyclic execution go-routines, and CommandTask represents
 // web rpc calling tasks.
 type Task interface {
 	// Do executes task. err is used for ServiceTask and resp is used for CommandTask.
-	Do(ctx *TaskContext)
+	Do(ctx *Context)
 }
 
 // commandTask does "Prepare"/"Response" before/after Do function.
 // Clone method returns a new copy of commandTask.
 type CommandTask interface {
-	Do(ctx *TaskContext)(resp []byte, err error)
+	Do(ctx *Context)(resp []byte, err error)
 
 	// Clone clones a copy of self
 	Clone() CommandTask
 	// Prepare does the preparation before calling Do.
-	Prepare(ctx *TaskContext) ([]byte, error)
+	Prepare(ctx *Context) ([]byte, error)
 	// Response replies result to client.
-	Response(ctx *TaskContext, resp []byte)
+	Response(ctx *Context, resp []byte)
 }
 
 func NewHandler(task CommandTask) http.Handler {
@@ -44,7 +42,7 @@ func (th *taskHandler)ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	task := cmdtask.Clone()
 	if task == nil {
-		panic("Clone return nil.")
+		panic("Clone returns nil.")
 	}
 
 	ctx := NewContext(w, r)

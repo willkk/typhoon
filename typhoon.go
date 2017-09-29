@@ -9,7 +9,7 @@ import (
 type Typhoon struct {
 	router *core.Router
 
-	server http.Server
+	Server http.Server
 
 	// services. Every Typhoon instance has its own services.
 	services []task.Task
@@ -19,7 +19,7 @@ type Typhoon struct {
 func New() *Typhoon {
 	return &Typhoon{
 		router: core.MainRouter(),
-		server: http.Server{
+		Server: http.Server{
 			Handler: core.MainRouter(),
 		},
 	}
@@ -43,9 +43,9 @@ func (tp *Typhoon)StartTasks() {
 }
 
 func (tp *Typhoon)Run(addr string) error {
-	tp.server.Addr = addr
+	tp.Server.Addr = addr
 
-	return tp.server.ListenAndServe()
+	return tp.Server.ListenAndServe()
 }
 
 
