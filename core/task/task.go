@@ -13,6 +13,12 @@ type Task interface {
 	Do(ctx *Context)
 }
 
+type TaskFunc func(ctx *Context)
+
+func (tf TaskFunc)Do(ctx *Context) {
+	tf(ctx)
+}
+
 // commandTask does "Prepare"/"Response" before/after Do function.
 // Clone method returns a new copy of commandTask.
 type CommandTask interface {

@@ -12,11 +12,8 @@ import (
 )
 
 //--------------------------------service task----------------------------------
-// Implement Task interface
-type ServiceTask struct {
-}
-
-func (st *ServiceTask)Do(ctx *task.Context) {
+// Implement func(ctx *task.Context)
+func TrivialTask(ctx *task.Context) {
 	var count int
 	for {
 		select {
@@ -89,8 +86,8 @@ func TestTyphoon_Run(t *testing.T) {
 	tp := New()
 
 	// Add normal service task
-	tp.AddTask(&ServiceTask{})
-	tp.AddTask(&ServiceTask{})
+	tp.AddTask(TrivialTask)
+	tp.AddTask(TrivialTask)
 	// Add web command task
 	tp.AddRoute("/test", &UserCommandTask{})
 

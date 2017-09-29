@@ -31,8 +31,8 @@ func (tp *Typhoon)AddRoute(pattern string, task task.CommandTask) {
 }
 
 // Add normal tasks that will be executed in separate go-routine.
-func (tp *Typhoon)AddTask(task task.Task) {
-	tp.services = append(tp.services, task)
+func (tp *Typhoon)AddTask(handler func(ctx *task.Context)) {
+	tp.services = append(tp.services, task.TaskFunc(handler))
 }
 
 func (tp *Typhoon)StartTasks() {
