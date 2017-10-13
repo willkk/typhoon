@@ -93,7 +93,7 @@ func TestTyphoon_Run(t *testing.T) {
 	// start service tasks
 	tp.StartTasks()
 	// start task immediately
-	StartTask(TrivialTask)
+	ExecTask(TrivialTask)
 	// wait for web requests
 	tp.Run(":8086")
 }

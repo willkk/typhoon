@@ -47,7 +47,7 @@ func (tp *Typhoon)Run(addr string) error {
 }
 
 // manually start a task
-func StartTask(taskfunc func(ctx *task.Context)) {
+func ExecTask(taskfunc func(ctx *task.Context)) {
 	go task.TaskFunc(taskfunc).Do(task.NewContext())
 }
 
