@@ -19,7 +19,7 @@ func (tf TaskFunc)Do(ctx *Context) {
 	tf(ctx)
 }
 
-// commandTask does "Prepare"/"Response" before/after Do function.
+// CommandTask does "Prepare"/"Response" before/after Do function.
 // Clone method returns a new copy of commandTask.
 type CommandTask interface {
 	Do(ctx *WebContext)(resp []byte, err error)

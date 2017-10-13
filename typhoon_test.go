@@ -15,6 +15,10 @@ import (
 // Implement func(ctx *task.Context)
 func TrivialTask(ctx *task.Context) {
 	var count int
+	if ctx.UserContext != nil {
+		fmt.Printf("[%d] userctx:%v.\n", ctx.Id, ctx.UserContext.Value("now"))
+	}
+
 	for {
 		select {
 		case <- time.After(time.Second*10):
@@ -93,7 +97,7 @@ func TestTyphoon_Run(t *testing.T) {
 	// start service tasks
 	tp.StartTasks()
 	// start task immediately
-	ExecTask(TrivialTask)
+	ExecTask(TrivialTask, context.WithValue(nil, "now", time.Now()))
 	// wait for web requests
 	tp.Run(":8086")
 }

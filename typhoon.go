@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"typhoon/core/task"
 	"typhoon/core"
+	"context"
 )
 
 type Typhoon struct {
@@ -47,7 +48,12 @@ func (tp *Typhoon)Run(addr string) error {
 }
 
 // manually start a task
-func ExecTask(taskfunc func(ctx *task.Context)) {
-	go task.TaskFunc(taskfunc).Do(task.NewContext())
+func ExecTask(taskfunc func(ctx *task.Context), userctx context.Context) {
+	ctx := task.NewContext()
+	if userctx != nil {
+		ctx.UserContext = userctx
+	}
+
+	go task.TaskFunc(taskfunc).Do(ctx)
 }
 
