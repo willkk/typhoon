@@ -31,6 +31,10 @@ import (
 // Implement func(ctx *task.Context)
 func TrivialTask(ctx *task.Context) {
 	var count int
+	if ctx.UserContext != nil {
+		fmt.Printf("[%d] userctx:%v.\n", ctx.Id, ctx.UserContext.Value("now"))
+	}
+
 	for {
 		select {
 		case <- time.After(time.Second*10):
@@ -108,25 +112,20 @@ func TestTyphoon_Run(t *testing.T) {
 
 	// start service tasks
 	tp.StartTasks()
-	// start a task immediately
-	StartTask(TrivialTask)
+	// start task immediately
+	ExecTask(TrivialTask, context.WithValue(nil, "now", time.Now()))
 	// wait for web requests
 	tp.Run(":8086")
 }
+
+
 ```
 
 You can send requests using command: **curl -d '{"name":"will","age":23, "tel":"112"}' http://127.0.0.1:8086/test**
 
 **Output may be like this:**
 ```
-[3] get req:{"name":"will","age":23, "tel":"112"}
-[3] handling.
-[3] write resp :{"name":"","tel":"","age":0}.
-[3] done, consume 1683 us
-[4] get req:{"name":"will","age":23, "tel":"112"}
-[4] handling.
-[4] write resp :{"name":"","tel":"","age":0}.
-[4] done, consume 69 us
+[2] userctx:2017-10-13 15:21:10.161182608 +0800 CST.
 [1] service task count 0.
 [2] service task count 0.
 [2] service task count 1.
@@ -136,12 +135,12 @@ You can send requests using command: **curl -d '{"name":"will","age":23, "tel":"
 [2] service task count 3.
 [1] service task count 3.
 [1] service task count 4.
-[5] get req:{"name":"will","age":23, "tel":"112"}
-[5] handling.
-[5] write resp :{"name":"","tel":"","age":0}.
-[5] done, consume 380 us
-[6] get req:{"name":"will","age":23, "tel":"112"}
-[6] handling.
-[6] write resp :{"name":"","tel":"","age":0}.
-[6] done, consume 440 us
+[3] get req:{"name":"will","age":23, "tel":"112"}
+[3] handling.
+[3] write resp :{"name":"","tel":"","age":0}.
+[3] done, consume 1683 us
+[4] get req:{"name":"will","age":23, "tel":"112"}
+[4] handling.
+[4] write resp :{"name":"","tel":"","age":0}.
+[4] done, consume 440 us
 ```
