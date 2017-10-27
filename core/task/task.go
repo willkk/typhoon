@@ -25,17 +25,28 @@ type CommandTask interface {
 	// Clone returns a copy of self
 	Clone() CommandTask
 	
-	// Prepare does the preparation before calling Do. It works in application layer.
-	Prepare(ctx *WebContext) ([]byte, error)
+	// Prepare does the preparation before calling Do.
+	// [Application Layer]
+	Prepare(ctx *WebContext) (TaskResponse, error)
 	
-	// Do does real business logic. It works in domain layer.
-	Do(ctx *WebContext)(resp CommandTaskResp, err error)
+	// Do does real business logic.
+	// [Domain Layer]
+	Do(ctx *WebContext)(resp TaskResponse, err error)
 	
-	// Finish does finishing works before writing response to client. It works in application layer.
-	Finish(ctx *WebContext, resp CommandTaskResp) []byte
-	
-	// Response replies result to client. It works in application layer.
-	Response(ctx *WebContext, resp []byte)
+	// Response replies result to client.
+	// [Application Layer]
+	Response(ctx *WebContext, resp TaskResponse)
+
+	// Finish does finishing works after writing response to client.
+	// Finishing works can be like, sending mails, recalculating bonus points
+	// after user's successful payment. Theoretically, it should have nothing to do with
+	// business logic in Do. Typically, it calls downstream services.
+	// [Application Layer]
+	Finish(ctx *WebContext, resp TaskResponse)
+}
+
+type TaskResponse interface {
+	Response() []byte
 }
 
 func NewHandler(task CommandTask) http.Handler {
@@ -65,13 +76,10 @@ func (th *taskHandler)ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// err is ignored if task is typeof CommandTask
 	resp, err := task.Do(ctx)
-	if err != nil {
-		task.Response(ctx, resp)
-		return
+	task.Response(ctx, resp)
+
+	if err == nil {
+		task.Finish(ctx, resp)
 	}
-	
-	rst := task.Finish(ctx, resp)
-	task.Response(ctx, rst)
 }

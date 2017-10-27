@@ -9,6 +9,13 @@ import (
 	"time"
 	"fmt"
 	"context"
+	"math/rand"
+)
+
+const (
+	Err_Success = iota
+	Err_Method
+	Err_Json
 )
 
 //--------------------------------service task----------------------------------
@@ -33,57 +40,93 @@ func TrivialTask(ctx *task.Context) {
 
 //--------------------------------command task----------------------------------
 // Implement CommandTask interface
-type UserCommandTask struct {
-	Name string `json:"name"`
-	Tel string 	`json:"tel"`
-	Age int 	`json:"age"`
+type PaymentTask struct {
+	OrderId int `json:"order_id"`
+	SrcBankNo string `json:"src_bank_no"`
+	DstBankNo string `json:"dst_bank_no"`
+	Amount int `json:"amount"`
 }
 
-func (ct *UserCommandTask)Do(ctx *task.WebContext)([]byte, error) {
-	resp, err := json.Marshal(ct)
-	fmt.Printf("[%d] handling.\n", ctx.Id)
-	return resp, err
+type PaymentTaskResp struct {
+	Code int `json:"code"`
+	Err string `json:"err"`
+	Data interface{} `json:"data"`
 }
 
-func (ct *UserCommandTask)Clone() task.CommandTask {
-	task := new(UserCommandTask)
+func (ptr *PaymentTaskResp)Response() []byte {
+	resp, err := json.Marshal(ptr)
+	if err != nil {
+		resp := fmt.Sprintf(`{"code":%d, "err":"%s"}`, Err_Json, err)
+		return []byte(resp)
+	}
+	return resp
+}
+
+func (pt *PaymentTask)Clone() task.CommandTask {
+	task := new(PaymentTask)
 	return task
 }
 
 type userContext struct {
 	start int // us
 }
-func (ct *UserCommandTask)Prepare(ctx *task.WebContext) ([]byte, error) {
+func (pt *PaymentTask)Prepare(ctx *task.WebContext) (task.TaskResponse, error) {
 	if ctx.R.Method != "POST" {
 		ctx.W.WriteHeader(400)
-		return []byte("Invalid Method"), errors.New("Invalid Method")
+		return &PaymentTaskResp{
+			Err_Method,
+			"Invalid Method",
+			nil},
+			errors.New("Invalid Method")
 	}
 
 	now := time.Now()
 
 	data, _ := ioutil.ReadAll(ctx.R.Body)
 	fmt.Printf("[%d] get req:%v\n", ctx.Id, string(data))
-	err := json.Unmarshal(data, ct)
+	err := json.Unmarshal(data, pt)
 	if err != nil {
-		return []byte(err.Error()), err
+		return &PaymentTaskResp{Err_Json, "json.Unmarshal failed", nil}, err
 	}
 
 	uctx := &userContext{now.Second()*1000000 + now.Nanosecond()/1000}
 	ctx.UserContext = context.WithValue(nil, "user_ctx", uctx)
 
-	return nil, nil
+	return &PaymentTaskResp{Err_Success, "success", "user data"}, nil
 }
 
-func (ct *UserCommandTask)Response(ctx *task.WebContext, data []byte) {
+func (pt *PaymentTask)Do(ctx *task.WebContext)(task.TaskResponse, error) {
+	fmt.Printf("[%d] handling payment.\n", ctx.Id)
+
+	// Do payment business logic. Typically, it should be a distributed transaction.
+	sleep := time.Duration(rand.Int()%100)
+	time.Sleep(time.Millisecond*sleep)
+
+	return &PaymentTaskResp{Err_Success, "success", "user data"}, nil
+}
+
+// Finishing works if there is.
+func (pt *PaymentTask)Finish(ctx *task.WebContext, reps task.TaskResponse) {
+	// add bonus points
+	// ...
+
+	// send payment success mails
+	// ...
+
+	fmt.Printf("[%d] Finish done.\n", ctx.Id)
+}
+
+func (pt *PaymentTask)Response(ctx *task.WebContext, resp task.TaskResponse) {
 	now := time.Now()
-	if data != nil {
+	if resp != nil {
+		data := resp.Response()
 		ctx.W.Write(data)
 		fmt.Printf("[%d] write resp :%s.\n", ctx.Id, string(data))
 	}
 
 	uctx := ctx.UserContext.Value("user_ctx").(*userContext)
 	now_us := now.Second()*1000000 + now.Nanosecond()/1000
-	fmt.Printf("[%d] done, consume %d us\n", ctx.Id, now_us - uctx.start)
+	fmt.Printf("[%d] task is done, consume %d us\n", ctx.Id, now_us - uctx.start)
 }
 
 func TestTyphoon_Run(t *testing.T) {
@@ -92,7 +135,7 @@ func TestTyphoon_Run(t *testing.T) {
 	// Add normal service task
 	tp.AddTask(TrivialTask)
 	// Add web command task
-	tp.AddRoute("/test", &UserCommandTask{})
+	tp.AddRoute("/test", &PaymentTask{})
 
 	// start service tasks
 	tp.StartTasks()

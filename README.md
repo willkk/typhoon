@@ -25,6 +25,13 @@ import (
 	"time"
 	"fmt"
 	"context"
+	"math/rand"
+)
+
+const (
+	Err_Success = iota
+	Err_Method
+	Err_Json
 )
 
 //--------------------------------service task----------------------------------
@@ -49,57 +56,93 @@ func TrivialTask(ctx *task.Context) {
 
 //--------------------------------command task----------------------------------
 // Implement CommandTask interface
-type UserCommandTask struct {
-	Name string `json:"name"`
-	Tel string 	`json:"tel"`
-	Age int 	`json:"age"`
+type PaymentTask struct {
+	OrderId int `json:"order_id"`
+	SrcBankNo string `json:"src_bank_no"`
+	DstBankNo string `json:"dst_bank_no"`
+	Amount int `json:"amount"`
 }
 
-func (ct *UserCommandTask)Do(ctx *task.WebContext)([]byte, error) {
-	resp, err := json.Marshal(ct)
-	fmt.Printf("[%d] handling.\n", ctx.Id)
-	return resp, err
+type PaymentTaskResp struct {
+	Code int `json:"code"`
+	Err string `json:"err"`
+	Data interface{} `json:"data"`
 }
 
-func (ct *UserCommandTask)Clone() task.CommandTask {
-	task := new(UserCommandTask)
+func (ptr *PaymentTaskResp)Response() []byte {
+	resp, err := json.Marshal(ptr)
+	if err != nil {
+		resp := fmt.Sprintf(`{"code":%d, "err":"%s"}`, Err_Json, err)
+		return []byte(resp)
+	}
+	return resp
+}
+
+func (pt *PaymentTask)Clone() task.CommandTask {
+	task := new(PaymentTask)
 	return task
 }
 
 type userContext struct {
 	start int // us
 }
-func (ct *UserCommandTask)Prepare(ctx *task.WebContext) ([]byte, error) {
+func (pt *PaymentTask)Prepare(ctx *task.WebContext) (task.TaskResponse, error) {
 	if ctx.R.Method != "POST" {
 		ctx.W.WriteHeader(400)
-		return []byte("Invalid Method"), errors.New("Invalid Method")
+		return &PaymentTaskResp{
+			Err_Method,
+			"Invalid Method",
+			nil},
+			errors.New("Invalid Method")
 	}
 
 	now := time.Now()
 
 	data, _ := ioutil.ReadAll(ctx.R.Body)
 	fmt.Printf("[%d] get req:%v\n", ctx.Id, string(data))
-	err := json.Unmarshal(data, ct)
+	err := json.Unmarshal(data, pt)
 	if err != nil {
-		return []byte(err.Error()), err
+		return &PaymentTaskResp{Err_Json, "json.Unmarshal failed", nil}, err
 	}
 
 	uctx := &userContext{now.Second()*1000000 + now.Nanosecond()/1000}
 	ctx.UserContext = context.WithValue(nil, "user_ctx", uctx)
 
-	return nil, nil
+	return &PaymentTaskResp{Err_Success, "success", "user data"}, nil
 }
 
-func (ct *UserCommandTask)Response(ctx *task.WebContext, data []byte) {
+func (pt *PaymentTask)Do(ctx *task.WebContext)(task.TaskResponse, error) {
+	fmt.Printf("[%d] handling payment.\n", ctx.Id)
+
+	// Do payment business logic. Typically, it should be a distributed transaction.
+	sleep := time.Duration(rand.Int()%100)
+	time.Sleep(time.Millisecond*sleep)
+
+	return &PaymentTaskResp{Err_Success, "success", "user data"}, nil
+}
+
+// Finishing works if there is.
+func (pt *PaymentTask)Finish(ctx *task.WebContext, reps task.TaskResponse) {
+	// add bonus points
+	// ...
+
+	// send payment success mails
+	// ...
+
+	fmt.Printf("[%d] Finish done.\n", ctx.Id)
+}
+
+func (pt *PaymentTask)Response(ctx *task.WebContext, resp task.TaskResponse) {
 	now := time.Now()
-	if data != nil {
+	if resp != nil {
+		data := resp.Response()
 		ctx.W.Write(data)
 		fmt.Printf("[%d] write resp :%s.\n", ctx.Id, string(data))
 	}
 
 	uctx := ctx.UserContext.Value("user_ctx").(*userContext)
 	now_us := now.Second()*1000000 + now.Nanosecond()/1000
-	fmt.Printf("[%d] done, consume %d us\n", ctx.Id, now_us - uctx.start)
+	fmt.Printf("[%d] task is done, consume %d us\n", ctx.Id, now_us - uctx.start)
 }
 
 func TestTyphoon_Run(t *testing.T) {
@@ -108,7 +151,7 @@ func TestTyphoon_Run(t *testing.T) {
 	// Add normal service task
 	tp.AddTask(TrivialTask)
 	// Add web command task
-	tp.AddRoute("/test", &UserCommandTask{})
+	tp.AddRoute("/test", &PaymentTask{})
 
 	// start service tasks
 	tp.StartTasks()
@@ -118,29 +161,29 @@ func TestTyphoon_Run(t *testing.T) {
 	tp.Run(":8086")
 }
 
-
 ```
 
 You can send requests using command: **curl -d '{"name":"will","age":23, "tel":"112"}' http://127.0.0.1:8086/test**
 
 **Output may be like this:**
 ```
-[2] userctx:2017-10-13 15:21:10.161182608 +0800 CST.
-[1] service task count 0.
+[2] userctx:2017-10-27 14:48:52.653505623 +0800 CST.
 [2] service task count 0.
-[2] service task count 1.
+[1] service task count 0.
 [1] service task count 1.
-[1] service task count 2.
+[2] service task count 1.
+[3] get req:{"order_id":123,"src_bank_no":"6147258369123","dst_bank_no":"7412589631203","amount":1000}
+[3] handling payment.
+[3] write resp :{"code":0,"err":"success","data":"user data"}.
+[3] done, consume 412017 us
+[3] Finish done.
+[4] get req:{"order_id":123,"src_bank_no":"6147258369123","dst_bank_no":"7412589631203","amount":1000}
+[4] handling payment.
+[4] write resp :{"code":0,"err":"success","data":"user data"}.
+[4] done, consume 552870 us
+[4] Finish done.
 [2] service task count 2.
-[2] service task count 3.
+[1] service task count 2.
 [1] service task count 3.
-[1] service task count 4.
-[3] get req:{"name":"will","age":23, "tel":"112"}
-[3] handling.
-[3] write resp :{"name":"","tel":"","age":0}.
-[3] done, consume 1683 us
-[4] get req:{"name":"will","age":23, "tel":"112"}
-[4] handling.
-[4] write resp :{"name":"","tel":"","age":0}.
-[4] done, consume 440 us
+[2] service task count 3.
 ```
