@@ -92,20 +92,20 @@ func (pt *PaymentTask)Prepare(ctx *task.WebContext) (task.TaskResponse, error) {
 	uctx := &userContext{now.Second()*1000000 + now.Nanosecond()/1000}
 	ctx.UserContext = context.WithValue(nil, "user_ctx", uctx)
 
-	return &PaymentTaskResp{Err_Success, "success", "user data"}, nil
+	return &PaymentTaskResp{Err_Success, "success", ""}, nil
 }
 
 func (pt *PaymentTask)Do(ctx *task.WebContext)(task.TaskResponse, error) {
 	fmt.Printf("[%d] handling payment.\n", ctx.Id)
 
-	// Do payment business logic. Typically, it should be a distributed transaction.
+	// Do payment business logic.
 	sleep := time.Duration(rand.Int()%100)
 	time.Sleep(time.Millisecond*sleep)
 
 	return &PaymentTaskResp{Err_Success, "success", "user data"}, nil
 }
 
-// Finishing works if there is.
+// Finishing works if there is any. There is no problem if you keep it empty.
 func (pt *PaymentTask)Finish(ctx *task.WebContext, reps task.TaskResponse) {
 	// add bonus points
 	// ...
@@ -140,7 +140,7 @@ func TestTyphoon_Run(t *testing.T) {
 	// start service tasks
 	tp.StartTasks()
 	// start task immediately
-	ExecTask(TrivialTask, context.WithValue(nil, "now", time.Now()))
+	ExecTask(TrivialTask, context.WithValue(nil, "now", time.Now().Unix()))
 	// wait for web requests
 	tp.Run(":8086")
 }

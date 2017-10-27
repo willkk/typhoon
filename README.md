@@ -108,20 +108,20 @@ func (pt *PaymentTask)Prepare(ctx *task.WebContext) (task.TaskResponse, error) {
 	uctx := &userContext{now.Second()*1000000 + now.Nanosecond()/1000}
 	ctx.UserContext = context.WithValue(nil, "user_ctx", uctx)
 
-	return &PaymentTaskResp{Err_Success, "success", "user data"}, nil
+	return &PaymentTaskResp{Err_Success, "success", ""}, nil
 }
 
 func (pt *PaymentTask)Do(ctx *task.WebContext)(task.TaskResponse, error) {
 	fmt.Printf("[%d] handling payment.\n", ctx.Id)
 
-	// Do payment business logic. Typically, it should be a distributed transaction.
+	// Do payment business logic.
 	sleep := time.Duration(rand.Int()%100)
 	time.Sleep(time.Millisecond*sleep)
 
 	return &PaymentTaskResp{Err_Success, "success", "user data"}, nil
 }
 
-// Finishing works if there is.
+// Finishing works if there is any. There is no problem if you keep it empty.
 func (pt *PaymentTask)Finish(ctx *task.WebContext, reps task.TaskResponse) {
 	// add bonus points
 	// ...
@@ -156,7 +156,7 @@ func TestTyphoon_Run(t *testing.T) {
 	// start service tasks
 	tp.StartTasks()
 	// start task immediately
-	ExecTask(TrivialTask, context.WithValue(nil, "now", time.Now()))
+	ExecTask(TrivialTask, context.WithValue(nil, "now", time.Now().Unix()))
 	// wait for web requests
 	tp.Run(":8086")
 }
@@ -167,23 +167,22 @@ You can send requests using command: **curl -d '{"name":"will","age":23, "tel":"
 
 **Output may be like this:**
 ```
-[2] userctx:2017-10-27 14:48:52.653505623 +0800 CST.
-[2] service task count 0.
+[2] userctx:1509088227.
 [1] service task count 0.
-[1] service task count 1.
-[2] service task count 1.
+[2] service task count 0.
 [3] get req:{"order_id":123,"src_bank_no":"6147258369123","dst_bank_no":"7412589631203","amount":1000}
 [3] handling payment.
 [3] write resp :{"code":0,"err":"success","data":"user data"}.
-[3] done, consume 412017 us
+[3] task is done, consume 11223 us
 [3] Finish done.
 [4] get req:{"order_id":123,"src_bank_no":"6147258369123","dst_bank_no":"7412589631203","amount":1000}
 [4] handling payment.
 [4] write resp :{"code":0,"err":"success","data":"user data"}.
-[4] done, consume 552870 us
+[4] task is done, consume 51472 us
 [4] Finish done.
-[2] service task count 2.
+[2] service task count 1.
+[1] service task count 1.
 [1] service task count 2.
-[1] service task count 3.
-[2] service task count 3.
+[2] service task count 2.
+
 ```

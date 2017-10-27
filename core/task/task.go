@@ -25,22 +25,25 @@ type CommandTask interface {
 	// Clone returns a copy of self
 	Clone() CommandTask
 	
-	// Prepare does the preparation before calling Do.
+	// Prepare does the preparation before calling Do. It handles request check,
+	// data formatting, ..., and so on.
 	// [Application Layer]
 	Prepare(ctx *WebContext) (TaskResponse, error)
 	
-	// Do does real business logic.
+	// Do does real business logic. It receives request data from Prepare, executes
+	// domain business logic and provides response to Response.
 	// [Domain Layer]
 	Do(ctx *WebContext)(resp TaskResponse, err error)
 	
-	// Response replies result to client.
+	// Response replies result to client. It just writes response from Do to client.
 	// [Application Layer]
 	Response(ctx *WebContext, resp TaskResponse)
 
 	// Finish does finishing works after writing response to client.
 	// Finishing works can be like, sending mails, recalculating bonus points
 	// after user's successful payment. Theoretically, it should have nothing to do with
-	// business logic in Do. Typically, it calls downstream services.
+	// business logic in Do. Typically, it calls downstream services after this task
+	// is successfully handled.
 	// [Application Layer]
 	Finish(ctx *WebContext, resp TaskResponse)
 }
