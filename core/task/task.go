@@ -39,11 +39,10 @@ type CommandTask interface {
 	// [Application Layer]
 	Response(ctx *WebContext, resp TaskResponse)
 
-	// Finish does finishing works after writing response to client.
-	// Finishing works can be like, sending mails, recalculating bonus points
-	// after user's successful payment. Theoretically, it should have nothing to do with
-	// business logic in Do. Typically, it calls downstream services after this task
-	// is successfully handled.
+	// Finish does finishing works. It's called if Do completes successfully.
+	// It has nothing to do with business logic, all of which should be handled in Do.
+	// Typically, it calls downstream services. For example, sending mails and 
+	// recalculating bonus points after user's successful payment.
 	// [Application Layer]
 	Finish(ctx *WebContext, resp TaskResponse)
 }
