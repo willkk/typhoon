@@ -4,12 +4,20 @@ A general purpose web api framework. Its main purposes are:
 2. Raise the reusability of codes between different projects.
 3. Identify go routines by Id, making it easy to track a unique request in log.
 
-Typhoon是一个通用目的的Web API应用框架。实际项目中，发现大家用Go写的程序架构性不强，一部分人还停留在面向过程的世界里；另一部分人有面向对象的思想，但程序的扩展性和灵活性不够好；或者自己已经可以写出具有良好结构的项目应用，但是系统库不够灵活，项目之间重复代码比较多等等。
-
-针对以上问题，该框架主要目的是：
+Typhoon是一个通用目的的Web API应用框架。基于分层架构思想：
+┌－－－－－－－－－－┬－－－－－－－－┐
+| Application      |    Prepare           |
+├－－－－－－－－－－┼－－－－－－－－┤
+| Domain           |     Do          |
+├－－－－－－－－－－┼－－－－－－－－┤
+| Infrastructure   |               |
+└－－－－－－－－－－┴－－－－－－－－┘
+该框架主要目的是：
 1. 解决通用Web API类型的Go程序架构问题，实现简单，灵活，易于扩展。
 2. 解决项目间重复编码的问题，提高代码复用性。
 3. 为go routine标记id，方便log跟踪单个请求。
+
+
 
 # Example(typhoon_test.go)
 
