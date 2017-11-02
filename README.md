@@ -4,19 +4,50 @@ A general purpose web api framework. Its main purposes are:
 2. Raise the reusability of codes between different projects.
 3. Identify go routines by Id, making it easy to track a unique request in log.
 
-Typhoon是一个通用目的的Web API应用框架。基于分层架构思想：
-┌－－－－－－－－－－┬－－－－－－－－┐
-| Application      |    Prepare           |
-├－－－－－－－－－－┼－－－－－－－－┤
-| Domain           |     Do          |
-├－－－－－－－－－－┼－－－－－－－－┤
-| Infrastructure   |               |
-└－－－－－－－－－－┴－－－－－－－－┘
+
+It's based on Layered Architecture thought:
+```
++-----------------------------------------------+
+|		 |				|
+|  Application	 |   Prepare/Response/Finish	|
+|		 |				|
+|-----------------------------------------------|
+|		 |				|
+|    Domain	 |             Do		|
+|		 |				|
+|-----------------------------------------------|
+|		 |				|
+| Infrastructure |     Db, MQ, Logging, ...	|
+|		 |				|
++-----------------------------------------------+
+
+Finish is used to call downstream services if Do completes successfully, if necessary. You can leave it empty freely.
+		     +---------------+
+		     |    Service    |
+		     |---------------|
+		     |     Finish    |
+		     +---------------+
+		    /		      \
+		   /		       \
+  +---------------+			+---------------+   
+  |		  |			|		|
+  |   Service2	  |			|    Service3	|
+  |		  |			|		|
+  +---------------+			+---------------+
+```  
 该框架主要目的是：
 1. 解决通用Web API类型的Go程序架构问题，实现简单，灵活，易于扩展。
 2. 解决项目间重复编码的问题，提高代码复用性。
 3. 为go routine标记id，方便log跟踪单个请求。
 
+该框架基于分层架构模型:  
+
+| 成员函数       | 层次   |  说明  |
+| --------   | -----  | ----  |
+|  Prepare   | 应用层 |   用于接收客户端请求，并进行身份验证，授权验证，参数检查等，然后对数据进行预处理，封装成领域层对象所需的格式。如果失败，返回失败条件下的响应消息和失败原因。    |
+|  Do        |  领域层   |   接受Prepare封装好的格式化数据，然后执行领域层逻辑进行业务处理。此函数只关心领域逻辑处理。返回处理结果和失败原因。   |
+| Response   |    应用层    |  接受Prepare或Do的返回结果数据，将响应消息进行序列化等操作，返回给客户端。  |
+| Finish     |   应用层    |  在Do操作执行成功时，调用下游服务接口。比如用户支付成功，亚马逊发送下单通知邮件；用户修改送货地址，亚马逊发送地址变更通知邮件等。  |
 
 
 # Example(typhoon_test.go)
@@ -129,7 +160,7 @@ func (pt *PaymentTask)Do(ctx *task.WebContext)(task.TaskResponse, error) {
 	return &PaymentTaskResp{Err_Success, "success", "user data"}, nil
 }
 
-// Finishing works if there is any. There is no problem if you keep it empty.
+// Finishing works if there is any. Typically, it calls downstream services.
 func (pt *PaymentTask)Finish(ctx *task.WebContext, reps task.TaskResponse) {
 	// add bonus points
 	// ...
