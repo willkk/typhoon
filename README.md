@@ -21,7 +21,7 @@ It's based on Layered Architecture thought:
 |		 |				|
 +-----------------------------------------------+
 
-Finish is used to call downstream services if Do completes successfully, if necessary. You can leave it empty freely.
+Finish is used to call downstream services if Do completes successfully. You can also leave it empty freely.
 		     +---------------+
 		     |    Service    |
 		     |---------------|
