@@ -42,7 +42,7 @@ Finish is used to call downstream services if Do completes successfully. You can
 
 该框架基于分层架构模型:  
 
-| 成员函数    | 层次   |  说明  |
+| 成员函数 | 层次   |  说明  |
 | --------   | :-----:  | ----  |
 |  Prepare   |   应用层<br>(Application)	|   用于接收客户端请求，并进行身份验证，授权验证，参数检查等，然后对数据进行预处理，封装成领域层对象所需的格式。如果失败，返回失败条件下的响应消息和失败原因。
 |  Do        |  领域层<br>(Domain)         |   接受Prepare封装好的格式化数据，然后执行领域层逻辑进行业务处理。此函数只关心领域逻辑处理。返回处理结果和失败原因。
